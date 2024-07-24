@@ -1,7 +1,7 @@
 
 ####################################################################
 # Title: synoptic.py
-# Author: Dan Kellett
+# Author: Michelle Hughes
 # Aim: Creation of dummy data for synoptic project looking at the
 # impact of activity on anxiety levels
 ####################################################################
