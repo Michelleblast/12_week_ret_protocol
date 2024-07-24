@@ -16,6 +16,7 @@ import numpy as np
 from PyQt5.QtWidgets import QApplication, QMainWindow, QTableWidget, QTableWidgetItem
 import matplotlib.pyplot as plt
 from scipy.stats import ttest_ind
+from scipy import stats
 import statsmodels.api as sm
 from statsmodels.formula.api import ols
 from statsmodels.stats.multicomp import pairwise_tukeyhsd
@@ -139,6 +140,8 @@ print("Standard deviation of baseline PCr/ATP by group")
 print(df.groupby('Group')['PCr_ATP_Baseline'].std())
 print("Average week 15 PCr/ATP by group")
 print(df.groupby('Group')['PCr_ATP_Week_15'].mean())
+print("Standard deviation of week 15 PCr/ATP by group")
+print(df.groupby('Group')['PCr_ATP_Week_15'].std())
 
 print("Average starting GAD by group")
 print(df.groupby('Group')['GAD7_Baseline'].mean())
@@ -146,6 +149,8 @@ print("Standard deviation of starting GAD by group")
 print(df.groupby('Group')['GAD7_Baseline'].std())
 print("Average week 15 GAD by group")
 print(df.groupby('Group')['GAD7_Week_15'].mean())
+print("Standard deviation of week 15 GAD by group")
+print(df.groupby('Group')['GAD7_Baseline'].std())
 
 print("Average starting waist by group")
 print(df.groupby('Group')['Waist_Circumference_Baseline'].mean())
@@ -156,6 +161,54 @@ print(df.groupby('Group')['Waist_Circumference_Week_15'].mean())
 
 print("Sub 75 completion by group")
 print(df.groupby('Group')['Sub_75_Completed'].mean())
+
+# Split data into two groups
+group_A = df[df['Group'] == 'Control']['GAD7_Difference']
+group_B = df[df['Group'] == 'Intervention']['GAD7_Difference']
+
+# Calculate mean difference
+mean_diff_A = np.mean(group_A)
+mean_diff_B = np.mean(group_B)
+mean_diff = mean_diff_B - mean_diff_A
+
+# Calculate standard errors
+se_A = stats.sem(group_A)
+se_B = stats.sem(group_B)
+
+# Calculate pooled standard error
+se_diff = np.sqrt(se_A**2 + se_B**2)
+
+# Calculate 95% confidence interval
+ci_low = mean_diff - 1.96 * se_diff
+ci_high = mean_diff + 1.96 * se_diff
+
+# Display results
+print(f"Mean difference GAD7 between groups: {mean_diff}")
+print(f"95% confidence interval for the GAD7 mean difference: ({ci_low}, {ci_high})")
+
+# Split data into two groups
+group_A = df[df['Group'] == 'Control']['PCr_ATP_Difference']
+group_B = df[df['Group'] == 'Intervention']['PCr_ATP_Difference']
+
+# Calculate mean difference
+mean_diff_A = np.mean(group_A)
+mean_diff_B = np.mean(group_B)
+mean_diff = mean_diff_B - mean_diff_A
+
+# Calculate standard errors
+se_A = stats.sem(group_A)
+se_B = stats.sem(group_B)
+
+# Calculate pooled standard error
+se_diff = np.sqrt(se_A**2 + se_B**2)
+
+# Calculate 95% confidence interval
+ci_low = mean_diff - 1.96 * se_diff
+ci_high = mean_diff + 1.96 * se_diff
+
+# Display results
+print(f"Mean difference PCr/ATP between groups: {mean_diff}")
+print(f"95% confidence interval for the PCr/ATP mean difference: ({ci_low}, {ci_high})")
 '''
 ####################################################################
 # Box and whisker charts
@@ -333,7 +386,7 @@ print(f"Cohen's d for PCr/ATP outcome: {cohens_d}")
 ####################################################################
 # ANOVA analysis
 ####################################################################
-
+'''
 # Define the model using ordinary least squares (OLS)
 model = ols('PCr_ATP_Difference ~ C(Group)', data=df).fit()
 
@@ -404,7 +457,7 @@ for res in effect_size_results:
 anova_table['sum_sq'] = anova_table['sum_sq'] / anova_table['sum_sq'].sum()
 anova_table = anova_table.rename(columns={'sum_sq': 'eta_sq'})
 print(anova_table)
-
+'''
 ####################################################################
 # Regression analysis
 ####################################################################
@@ -431,4 +484,103 @@ print(model.summary())
 '''
 # Extract data to .csv file
 df.to_csv('synoptic_data.csv', index=False)
+'''
+
+####################################################################
+# Confidence intervals
+####################################################################
+'''
+# Calculate the percentage change
+df['Percentage_GAD7_Change'] = ((df['GAD7_Week_15'] - df['GAD7_Baseline']) / df['GAD7_Baseline']) * 100
+
+# Calculate the mean percentage change for each group
+mean_percentage_change = df.groupby('Group')['Percentage_GAD7_Change'].mean()
+print("Mean Percentage GAD Change for each group:")
+print(mean_percentage_change)
+
+# Function to calculate the 95% confidence interval
+def confidence_interval(data, confidence=0.95):
+    n = len(data)
+    mean = np.mean(data)
+    se = stats.sem(data)
+    h = se * stats.t.ppf((1 + confidence) / 2., n-1)
+    return mean, mean-h, mean+h
+
+# Calculate the confidence interval for each group
+confidence_intervals = df.groupby('Group')['Percentage_GAD7_Change'].apply(confidence_interval).apply(pd.Series)
+confidence_intervals.columns = ['Mean', 'CI_Lower', 'CI_Upper']
+
+print("\n95% Confidence Intervals for Mean Percentage GAD7 Change:")
+print(confidence_intervals)
+
+# Calculate the absolute change
+df['Absolute_GAD7_Change'] = df['GAD7_Week_15'] - df['GAD7_Baseline']
+
+# Calculate the mean absolute change for each group
+mean_absolute_change = df.groupby('Group')['Absolute_GAD7_Change'].mean()
+print("Mean Absolute GAD7 Change for each group:")
+print(mean_absolute_change)
+
+# Function to calculate the 95% confidence interval
+def confidence_interval(data, confidence=0.95):
+    n = len(data)
+    mean = np.mean(data)
+    se = stats.sem(data)
+    h = se * stats.t.ppf((1 + confidence) / 2., n-1)
+    return mean, mean-h, mean+h
+
+# Calculate the confidence interval for each group
+confidence_intervals_abs = df.groupby('Group')['Absolute_GAD7_Change'].apply(confidence_interval).apply(pd.Series)
+confidence_intervals_abs.columns = ['Mean', 'CI_Lower', 'CI_Upper']
+
+print("\n95% Confidence Intervals for Mean Absolute GAD7 Change:")
+print(confidence_intervals_abs)
+
+#############################################################################
+
+# Calculate the percentage change
+df['Percentage_PCr_Change'] = ((df['PCr_ATP_Week_15'] - df['PCr_ATP_Baseline']) / df['PCr_ATP_Baseline']) * 100
+
+# Calculate the mean percentage change for each group
+mean_percentage_change = df.groupby('Group')['Percentage_PCr_Change'].mean()
+print("Mean Percentage PCr Change for each group:")
+print(mean_percentage_change)
+
+# Function to calculate the 95% confidence interval
+def confidence_interval(data, confidence=0.95):
+    n = len(data)
+    mean = np.mean(data)
+    se = stats.sem(data)
+    h = se * stats.t.ppf((1 + confidence) / 2., n-1)
+    return mean, mean-h, mean+h
+
+# Calculate the confidence interval for each group
+confidence_intervals = df.groupby('Group')['Percentage_PCr_Change'].apply(confidence_interval).apply(pd.Series)
+confidence_intervals.columns = ['Mean', 'CI_Lower', 'CI_Upper']
+
+print("\n95% Confidence Intervals for Mean Percentage PCr Change:")
+print(confidence_intervals)
+
+# Calculate the absolute change
+df['Absolute_PCr_Change'] = df['PCr_ATP_Week_15'] - df['PCr_ATP_Baseline']
+
+# Calculate the mean absolute change for each group
+mean_absolute_change = df.groupby('Group')['Absolute_PCr_Change'].mean()
+print("Mean Absolute PCr Change for each group:")
+print(mean_absolute_change)
+
+# Function to calculate the 95% confidence interval
+def confidence_interval(data, confidence=0.95):
+    n = len(data)
+    mean = np.mean(data)
+    se = stats.sem(data)
+    h = se * stats.t.ppf((1 + confidence) / 2., n-1)
+    return mean, mean-h, mean+h
+
+# Calculate the confidence interval for each group
+confidence_intervals_abs = df.groupby('Group')['Absolute_PCr_Change'].apply(confidence_interval).apply(pd.Series)
+confidence_intervals_abs.columns = ['Mean', 'CI_Lower', 'CI_Upper']
+
+print("\n95% Confidence Intervals for Mean Absolute PCr Change:")
+print(confidence_intervals_abs)
 '''
